@@ -1,9 +1,11 @@
 import { Server, Wifi, WifiOff, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { mockInstances, mockGroups } from "@/data/mockData";
-import { DashboardStats } from "@/types/evolution";
+import { DashboardStats, EvolutionInstance, InstanceGroup } from "@/types/evolution";
 import { InstanceCard } from "@/components/InstanceCard";
 import { useMemo } from "react";
+import { useInstances } from "@/hooks/useInstances";
+import { useGroups } from "@/hooks/useGroups";
 
 const StatCard = ({
   label,
@@ -35,17 +37,23 @@ const StatCard = ({
 );
 
 export default function Dashboard() {
+  const { data: apiInstances } = useInstances();
+  const { data: apiGroups } = useGroups();
+
+  const instances: EvolutionInstance[] = apiInstances || mockInstances;
+  const groups: InstanceGroup[] = apiGroups || mockGroups;
+
   const stats: DashboardStats = useMemo(
     () => ({
-      total: mockInstances.length,
-      connected: mockInstances.filter((i) => i.status === "open").length,
-      disconnected: mockInstances.filter((i) => i.status === "close").length,
-      connecting: mockInstances.filter((i) => i.status === "connecting").length,
+      total: instances.length,
+      connected: instances.filter((i) => i.status === "open").length,
+      disconnected: instances.filter((i) => i.status === "close").length,
+      connecting: instances.filter((i) => i.status === "connecting").length,
     }),
-    []
+    [instances]
   );
 
-  const recentInstances = mockInstances.slice(0, 4);
+  const recentInstances = instances.slice(0, 4);
 
   return (
     <div className="space-y-8 max-w-6xl">
@@ -84,7 +92,7 @@ export default function Dashboard() {
         <h2 className="text-lg font-semibold mb-4">Instâncias Recentes</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {recentInstances.map((instance) => {
-            const group = mockGroups.find((g) => g.id === instance.groupId);
+            const group = groups.find((g) => g.id === instance.groupId);
             return (
               <InstanceCard
                 key={instance.id}
