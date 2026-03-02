@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { mockGroups, mockInstances } from "@/data/mockData";
-import { InstanceGroup } from "@/types/evolution";
+import { EvolutionInstance, InstanceGroup } from "@/types/evolution";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,9 +9,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Server } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useGroups, useCreateGroup, useUpdateGroup, useDeleteGroup } from "@/hooks/useGroups";
+import { useInstances } from "@/hooks/useInstances";
 
 export default function Groups() {
   const { toast } = useToast();
+  const { data: apiGroups } = useGroups();
+  const { data: apiInstances } = useInstances();
+
+  const groups: InstanceGroup[] = apiGroups || mockGroups;
+  const instances: EvolutionInstance[] = apiInstances || mockInstances;
+
+  const createMutation = useCreateGroup();
+  const updateMutation = useUpdateGroup();
+  const deleteMutation = useDeleteGroup();
+
   const [createOpen, setCreateOpen] = useState(false);
   const [editGroup, setEditGroup] = useState<InstanceGroup | null>(null);
   const [name, setName] = useState("");
@@ -26,17 +38,40 @@ export default function Groups() {
   };
 
   const handleSave = () => {
-    toast({ title: editGroup ? "Grupo atualizado" : "Grupo criado", description: `${name} salvo com sucesso.` });
-    setCreateOpen(false);
-    setEditGroup(null);
-    setName("");
-    setColor("#22c55e");
-    setDescription("");
+    const data = { name, color, description: description || undefined };
+    if (editGroup) {
+      updateMutation.mutate(
+        { id: editGroup.id, data },
+        {
+          onSuccess: () => {
+            toast({ title: "Grupo atualizado" });
+            setEditGroup(null);
+          },
+          onError: (err) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+        }
+      );
+    } else {
+      createMutation.mutate(data, {
+        onSuccess: () => {
+          toast({ title: "Grupo criado", description: `${name} salvo com sucesso.` });
+          setCreateOpen(false);
+          setName("");
+          setColor("#22c55e");
+          setDescription("");
+        },
+        onError: (err) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+      });
+    }
   };
 
   const handleDelete = (group: InstanceGroup) => {
-    toast({ title: "Grupo removido", description: `${group.name} foi excluído.`, variant: "destructive" });
+    deleteMutation.mutate(group.id, {
+      onSuccess: () => toast({ title: "Grupo removido", description: `${group.name} foi excluído.`, variant: "destructive" }),
+      onError: (err) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+    });
   };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -60,22 +95,17 @@ export default function Groups() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {mockGroups.map((group) => {
-          const count = mockInstances.filter((i) => i.groupId === group.id).length;
+        {groups.map((group) => {
+          const count = instances.filter((i) => i.groupId === group.id).length;
           return (
             <Card key={group.id} className="bg-card border-border/50 p-5 group hover:border-primary/20 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <div
-                      className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: group.color }}
-                    />
+                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: group.color }} />
                     <h3 className="font-semibold text-foreground">{group.name}</h3>
                   </div>
-                  {group.description && (
-                    <p className="text-sm text-muted-foreground">{group.description}</p>
-                  )}
+                  {group.description && <p className="text-sm text-muted-foreground">{group.description}</p>}
                   <Badge variant="outline" className="border-border/50 text-muted-foreground gap-1">
                     <Server className="h-3 w-3" />
                     {count} instância{count !== 1 ? "s" : ""}
@@ -85,12 +115,7 @@ export default function Groups() {
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(group)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(group)}
-                  >
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(group)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -102,9 +127,7 @@ export default function Groups() {
 
       <Dialog open={createOpen || !!editGroup} onOpenChange={(o) => { if (!o) { setCreateOpen(false); setEditGroup(null); } }}>
         <DialogContent className="bg-card border-border/50">
-          <DialogHeader>
-            <DialogTitle>{editGroup ? "Editar Grupo" : "Novo Grupo"}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{editGroup ? "Editar Grupo" : "Novo Grupo"}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Nome</Label>
@@ -113,12 +136,7 @@ export default function Groups() {
             <div className="space-y-2">
               <Label>Cor</Label>
               <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="h-9 w-12 rounded border border-border/50 bg-muted cursor-pointer"
-                />
+                <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="h-9 w-12 rounded border border-border/50 bg-muted cursor-pointer" />
                 <Input value={color} onChange={(e) => setColor(e.target.value)} className="font-mono bg-muted border-border/50 w-32" />
               </div>
             </div>
@@ -129,7 +147,9 @@ export default function Groups() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setCreateOpen(false); setEditGroup(null); }}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={!name.trim()}>Salvar</Button>
+            <Button onClick={handleSave} disabled={!name.trim() || isPending}>
+              {isPending ? "Salvando..." : "Salvar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
