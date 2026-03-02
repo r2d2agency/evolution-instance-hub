@@ -88,7 +88,14 @@ router.post("/", async (req, res) => {
 // GET /api/instances
 router.get("/", async (req, res) => {
   try {
-    const instances = await instancesRepo.findAll();
+    let instances = [];
+    try {
+      instances = await instancesRepo.findAll();
+    } catch (dbErr) {
+      console.error("DB findAll error:", dbErr.message);
+      // Return empty list if DB is unavailable
+      return res.json({ error: false, instances: [] });
+    }
 
     // Enrich with live status from W-API
     const enriched = await Promise.all(
