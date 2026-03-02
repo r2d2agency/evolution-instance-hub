@@ -1,6 +1,5 @@
 import { Server, Wifi, WifiOff, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { mockInstances, mockGroups } from "@/data/mockData";
 import { DashboardStats, EvolutionInstance, InstanceGroup } from "@/types/evolution";
 import { InstanceCard } from "@/components/InstanceCard";
 import { useMemo } from "react";
@@ -40,8 +39,8 @@ export default function Dashboard() {
   const { data: apiInstances } = useInstances();
   const { data: apiGroups } = useGroups();
 
-  const instances: EvolutionInstance[] = apiInstances || mockInstances;
-  const groups: InstanceGroup[] = apiGroups || mockGroups;
+  const instances: EvolutionInstance[] = apiInstances || [];
+  const groups: InstanceGroup[] = apiGroups || [];
 
   const stats: DashboardStats = useMemo(
     () => ({
