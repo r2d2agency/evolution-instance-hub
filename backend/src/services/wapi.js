@@ -23,15 +23,21 @@ async function wapiRequest(path, options = {}) {
 
 export const wapi = {
   // Integration endpoints
-  createInstance: (instanceName, rejectCalls = false, callMessage = "") =>
-    wapiRequest("/integrator/create-instance", {
+  createInstance: (instanceName, rejectCalls = false, callMessage = "") => {
+    const params = new URLSearchParams({
+      instanceName,
+      rejectCalls: String(rejectCalls),
+      callMessage: callMessage || "",
+    });
+    return wapiRequest(`/integrator/create-instance?${params.toString()}`, {
       method: "POST",
       body: JSON.stringify({
         instanceName,
         rejectCalls: rejectCalls ?? false,
         callMessage: callMessage || "",
       }),
-    }),
+    });
+  },
 
   deleteInstance: (instanceId) =>
     wapiRequest(`/integrator/delete-instance?instanceId=${instanceId}`, { method: "DELETE" }),
