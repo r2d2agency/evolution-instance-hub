@@ -95,7 +95,7 @@ export default function Groups() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {groups.map((group) => {
-          const count = instances.filter((i) => i.groupId === group.id).length;
+          const count: number = 0; // W-API doesn't support groups natively
           return (
             <Card key={group.id} className="bg-card border-border/50 p-5 group hover:border-primary/20 transition-colors">
               <div className="flex items-start justify-between">

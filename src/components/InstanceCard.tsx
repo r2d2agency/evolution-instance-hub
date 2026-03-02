@@ -12,16 +12,15 @@ import {
 import {
   Wifi,
   WifiOff,
-  Loader2,
   MoreVertical,
-  Webhook,
-  Key,
   Trash2,
-  Plug,
-  Unplug,
-  Pencil,
   Phone,
+  MessageSquare,
+  Copy,
+  Check,
 } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const statusConfig: Record<InstanceStatus, { label: string; className: string; icon: React.ReactNode }> = {
   open: {
@@ -37,49 +36,41 @@ const statusConfig: Record<InstanceStatus, { label: string; className: string; i
   connecting: {
     label: "Conectando",
     className: "bg-warning/10 text-warning border-warning/20",
-    icon: <Loader2 className="h-3 w-3 animate-spin" />,
+    icon: <Wifi className="h-3 w-3 animate-pulse" />,
   },
 };
 
 interface InstanceCardProps {
   instance: EvolutionInstance;
-  groupName?: string;
-  groupColor?: string;
-  onEdit?: (instance: EvolutionInstance) => void;
   onDelete?: (instance: EvolutionInstance) => void;
-  onConnect?: (instance: EvolutionInstance) => void;
-  onDisconnect?: (instance: EvolutionInstance) => void;
-  onWebhook?: (instance: EvolutionInstance) => void;
-  onToken?: (instance: EvolutionInstance) => void;
 }
 
-export function InstanceCard({
-  instance,
-  groupName,
-  groupColor,
-  onEdit,
-  onDelete,
-  onConnect,
-  onDisconnect,
-  onWebhook,
-  onToken,
-}: InstanceCardProps) {
+export function InstanceCard({ instance, onDelete }: InstanceCardProps) {
   const status = statusConfig[instance.status];
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+
+  const copyToken = () => {
+    if (instance.token) {
+      navigator.clipboard.writeText(instance.token);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast({ title: "Token copiado!" });
+    }
+  };
 
   return (
     <Card className="bg-card border-border/50 hover:border-primary/20 transition-all duration-200 group">
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-foreground truncate font-mono">
-                {instance.instanceName}
-              </h3>
-            </div>
-            {instance.number && (
+            <h3 className="text-sm font-semibold text-foreground truncate font-mono">
+              {instance.instanceName}
+            </h3>
+            {instance.connectedPhone && (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Phone className="h-3 w-3" />
-                <span className="font-mono">{instance.number}</span>
+                <span className="font-mono">{instance.connectedPhone}</span>
               </div>
             )}
           </div>
@@ -94,24 +85,12 @@ export function InstanceCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => onEdit?.(instance)}>
-                <Pencil className="mr-2 h-4 w-4" /> Editar
-              </DropdownMenuItem>
-              {instance.status === "close" ? (
-                <DropdownMenuItem onClick={() => onConnect?.(instance)}>
-                  <Plug className="mr-2 h-4 w-4" /> Conectar
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem onClick={() => onDisconnect?.(instance)}>
-                  <Unplug className="mr-2 h-4 w-4" /> Desconectar
+              {instance.token && (
+                <DropdownMenuItem onClick={copyToken}>
+                  {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                  Copiar Token
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={() => onWebhook?.(instance)}>
-                <Webhook className="mr-2 h-4 w-4" /> Webhook
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onToken?.(instance)}>
-                <Key className="mr-2 h-4 w-4" /> Token
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => onDelete?.(instance)}
@@ -128,21 +107,22 @@ export function InstanceCard({
             <span className="mr-1">{status.icon}</span>
             {status.label}
           </Badge>
-          {groupName && (
-            <Badge
-              variant="outline"
-              className="border-border/50"
-              style={{ color: groupColor, borderColor: `${groupColor}33` }}
-            >
-              {groupName}
-            </Badge>
-          )}
         </div>
 
-        {instance.webhookUrl && (
-          <div className="pt-1">
-            <p className="text-[10px] uppercase text-muted-foreground/60 tracking-wider mb-1">Webhook</p>
-            <p className="text-xs text-muted-foreground font-mono truncate">{instance.webhookUrl}</p>
+        {(instance.messagesSent !== undefined || instance.messagesReceived !== undefined) && (
+          <div className="flex items-center gap-4 pt-1">
+            {instance.messagesSent !== undefined && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <MessageSquare className="h-3 w-3" />
+                <span>{instance.messagesSent} enviadas</span>
+              </div>
+            )}
+            {instance.messagesReceived !== undefined && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <MessageSquare className="h-3 w-3" />
+                <span>{instance.messagesReceived} recebidas</span>
+              </div>
+            )}
           </div>
         )}
       </div>

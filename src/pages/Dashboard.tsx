@@ -1,10 +1,9 @@
-import { Server, Wifi, WifiOff, Loader2 } from "lucide-react";
+import { Server, Wifi, WifiOff } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { DashboardStats, EvolutionInstance, InstanceGroup } from "@/types/evolution";
+import { DashboardStats, EvolutionInstance } from "@/types/evolution";
 import { InstanceCard } from "@/components/InstanceCard";
 import { useMemo } from "react";
 import { useInstances } from "@/hooks/useInstances";
-import { useGroups } from "@/hooks/useGroups";
 
 const StatCard = ({
   label,
@@ -37,10 +36,8 @@ const StatCard = ({
 
 export default function Dashboard() {
   const { data: apiInstances } = useInstances();
-  const { data: apiGroups } = useGroups();
 
   const instances: EvolutionInstance[] = apiInstances || [];
-  const groups: InstanceGroup[] = apiGroups || [];
 
   const stats: DashboardStats = useMemo(
     () => ({
@@ -58,10 +55,10 @@ export default function Dashboard() {
     <div className="space-y-8 max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Visão geral das suas instâncias Evolution</p>
+        <p className="text-sm text-muted-foreground mt-1">Visão geral das suas instâncias W-API</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
           label="Total"
           value={stats.total}
@@ -79,28 +76,14 @@ export default function Dashboard() {
           accent="hsl(0, 72%, 55%)"
           icon={<WifiOff className="h-5 w-5 text-destructive" />}
         />
-        <StatCard
-          label="Conectando"
-          value={stats.connecting}
-          accent="hsl(38, 92%, 55%)"
-          icon={<Loader2 className="h-5 w-5 text-warning animate-spin" />}
-        />
       </div>
 
       <div>
         <h2 className="text-lg font-semibold mb-4">Instâncias Recentes</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {recentInstances.map((instance) => {
-            const group = groups.find((g) => g.id === instance.groupId);
-            return (
-              <InstanceCard
-                key={instance.id}
-                instance={instance}
-                groupName={group?.name}
-                groupColor={group?.color}
-              />
-            );
-          })}
+          {recentInstances.map((instance) => (
+            <InstanceCard key={instance.id} instance={instance} />
+          ))}
         </div>
       </div>
     </div>
