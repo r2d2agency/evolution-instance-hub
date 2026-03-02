@@ -244,7 +244,13 @@ export default function Instances() {
       <QrCodeDialog instance={selectedInstance} open={qrOpen} onOpenChange={setQrOpen} />
 
       {/* Instance Details Dialog */}
-      <InstanceDetailsDialog instance={selectedInstance} open={detailsOpen} onOpenChange={setDetailsOpen} />
+      <InstanceDetailsDialog
+        instance={selectedInstance}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+        onDisconnect={handleDisconnect}
+        onRestart={handleRestart}
+      />
     </div>
   );
 }
