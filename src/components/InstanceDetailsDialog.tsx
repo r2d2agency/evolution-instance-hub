@@ -52,6 +52,7 @@ export function InstanceDetailsDialog({ instance, open, onOpenChange }: Instance
   };
 
   const isLoading = detailsLoading || deviceLoading;
+  const inst = details || instance;
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); setRenameMode(false); }}>
@@ -67,116 +68,106 @@ export function InstanceDetailsDialog({ instance, open, onOpenChange }: Instance
           <div className="flex justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ) : (
+        ) : inst ? (
           <div className="space-y-4 py-2">
-            {/* Status */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Status</span>
-              <Badge variant="outline" className={details?.connected ? "text-success border-success/20" : "text-destructive border-destructive/20"}>
-                {details?.connected ? "Conectado" : "Desconectado"}
+              <Badge variant="outline" className={inst.connected ? "text-success border-success/20" : "text-destructive border-destructive/20"}>
+                {inst.connected ? "Conectado" : "Desconectado"}
               </Badge>
             </div>
 
-            {/* Connected Phone */}
-            {details?.connectedPhone && (
+            {inst.connectedPhone && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Telefone</span>
-                <span className="text-sm font-mono">{details.connectedPhone}</span>
+                <span className="text-sm font-mono">{inst.connectedPhone}</span>
               </div>
             )}
 
-            {/* Device info */}
-            {device && (
+            {device && !("error" in device && device.error) && (
               <>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Nome WhatsApp</span>
-                  <span className="text-sm">{device.name}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Plataforma</span>
-                  <span className="text-sm">{device.platform}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Business</span>
-                  <span className="text-sm">{device.isBusiness ? "Sim" : "Não"}</span>
-                </div>
-                {device.profilePictureUrl && (
+                {"name" in device && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Nome WhatsApp</span>
+                    <span className="text-sm">{(device as any).name}</span>
+                  </div>
+                )}
+                {"platform" in device && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Plataforma</span>
+                    <span className="text-sm">{(device as any).platform}</span>
+                  </div>
+                )}
+                {"isBusiness" in device && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Business</span>
+                    <span className="text-sm">{(device as any).isBusiness ? "Sim" : "Não"}</span>
+                  </div>
+                )}
+                {"profilePictureUrl" in device && (device as any).profilePictureUrl && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Foto</span>
-                    <img src={device.profilePictureUrl} alt="Perfil" className="h-10 w-10 rounded-full" />
+                    <img src={(device as any).profilePictureUrl} alt="Perfil" className="h-10 w-10 rounded-full" />
                   </div>
                 )}
               </>
             )}
 
-            {/* Stats */}
-            {details && (
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="bg-muted rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold">{details.messagesSent ?? 0}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase">Enviadas</p>
-                </div>
-                <div className="bg-muted rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold">{details.messagesReceived ?? 0}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase">Recebidas</p>
-                </div>
-                <div className="bg-muted rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold">{details.contacts ?? 0}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase">Contatos</p>
-                </div>
-                <div className="bg-muted rounded-lg p-3 text-center">
-                  <p className="text-xl font-bold">{details.chats ?? 0}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase">Chats</p>
-                </div>
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="bg-muted rounded-lg p-3 text-center">
+                <p className="text-xl font-bold">{inst.messagesSent ?? 0}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Enviadas</p>
               </div>
-            )}
+              <div className="bg-muted rounded-lg p-3 text-center">
+                <p className="text-xl font-bold">{inst.messagesReceived ?? 0}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Recebidas</p>
+              </div>
+              <div className="bg-muted rounded-lg p-3 text-center">
+                <p className="text-xl font-bold">{inst.contacts ?? 0}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Contatos</p>
+              </div>
+              <div className="bg-muted rounded-lg p-3 text-center">
+                <p className="text-xl font-bold">{inst.chats ?? 0}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Chats</p>
+              </div>
+            </div>
 
-            {/* Auto Read */}
             <div className="flex items-center justify-between pt-2">
               <div>
                 <p className="text-sm font-medium">Leitura automática</p>
-                <p className="text-xs text-muted-foreground">Marcar mensagens como lidas automaticamente</p>
+                <p className="text-xs text-muted-foreground">Marcar mensagens como lidas</p>
               </div>
               <Switch
-                checked={details?.automaticReading ?? false}
+                checked={inst.automaticReading ?? false}
                 onCheckedChange={handleAutoRead}
                 disabled={autoReadMutation.isPending}
               />
             </div>
 
-            {/* Rename */}
             <div className="pt-2">
               {renameMode ? (
                 <div className="flex gap-2">
-                  <Input
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="Novo nome"
-                    className="font-mono bg-muted border-border/50 text-sm"
-                  />
+                  <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Novo nome" className="font-mono bg-muted border-border/50 text-sm" />
                   <Button size="sm" onClick={handleRename} disabled={renameMutation.isPending || !newName.trim()}>
                     {renameMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => setRenameMode(false)}>
-                    Cancelar
-                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setRenameMode(false)}>Cancelar</Button>
                 </div>
               ) : (
-                <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => { setNewName(instance?.instanceName || ""); setRenameMode(true); }}>
+                <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => { setNewName(inst.instanceName || ""); setRenameMode(true); }}>
                   <Pencil className="h-4 w-4" /> Renomear instância
                 </Button>
               )}
             </div>
 
-            {/* Token */}
-            {details?.token && (
+            {inst.token && (
               <div className="space-y-1.5 pt-2">
                 <Label className="text-xs">Token da instância</Label>
-                <Input readOnly value={details.token} className="font-mono bg-muted border-border/50 text-xs" />
+                <Input readOnly value={inst.token} className="font-mono bg-muted border-border/50 text-xs" />
               </div>
             )}
           </div>
-        )}
+        ) : null}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>

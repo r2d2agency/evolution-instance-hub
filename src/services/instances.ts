@@ -5,159 +5,125 @@ export interface CreateInstancePayload {
   instanceName: string;
   rejectCalls?: boolean;
   callMessage?: string;
+  webhooks?: {
+    connected?: string;
+    disconnected?: string;
+    delivery?: string;
+    received?: string;
+    messageStatus?: string;
+    chatPresence?: string;
+  };
+  metadata?: Record<string, unknown>;
 }
 
-// W-API raw response for list
-interface WApiInstanceRaw {
-  instanceId: string;
+interface BackendInstance {
+  id: string;
+  instance_id: string;
+  instance_name: string;
   token: string;
-  created: string;
-  instanceName: string;
   connected: boolean;
-  connectedPhone?: string;
-  contacts?: number;
-  chats?: number;
-  messagesSent?: number;
-  messagesReceived?: number;
-  webhookConnectedUrl?: string;
-  webhookDisconnectedUrl?: string;
-  webhookReceivedUrl?: string;
-  webhookDeliveryUrl?: string;
-  webhookStatusUrl?: string;
-  webhookPresenceUrl?: string;
-  automaticReading?: boolean;
-  rejectCalls?: boolean;
-  callMessage?: string;
+  connected_phone?: string;
+  webhook_connected?: string;
+  webhook_disconnected?: string;
+  webhook_delivery?: string;
+  webhook_received?: string;
+  webhook_message_status?: string;
+  webhook_chat_presence?: string;
+  auto_read?: boolean;
+  reject_calls?: boolean;
+  call_message?: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  // Enriched from W-API
+  wapi?: Record<string, unknown>;
+  device?: Record<string, unknown>;
 }
 
-interface WApiListResponse {
+interface ListResponse {
   error: boolean;
-  instances: WApiInstanceRaw[];
-  total: number;
-  totalPage: number;
-  pageSize: number;
-  page: number;
+  instances: BackendInstance[];
 }
 
-interface WApiCreateResponse {
+interface CreateResponse {
   error: boolean;
   message: string;
-  instanceId: string;
-  token: string;
+  instance: BackendInstance;
+  webhookResults: Record<string, string>;
 }
 
-interface WApiGenericResponse {
+interface DetailResponse {
   error: boolean;
-  message: string;
+  instance: BackendInstance;
 }
 
-interface WApiQrCodeResponse {
-  error: boolean;
-  instanceId: string;
-  qrcode: string;
-}
-
-interface WApiStatusResponse {
-  instanceId: string;
-  connected: boolean;
-}
-
-interface WApiDeviceResponse {
-  connectedPhone: string;
-  lid: string;
-  name: string;
-  platform: string;
-  profilePictureUrl: string;
-  status: string;
-  isBusiness: boolean;
-}
-
-interface WApiFetchInstanceResponse {
-  instanceId: string;
-  instanceName: string;
-  token: string;
-  connected: boolean;
-  connectedPhone?: string;
-  paymentStatus?: string;
-  created: string;
-  expires?: number;
-  contacts?: number;
-  chats?: number;
-  messagesSent?: number;
-  messagesReceived?: number;
-  webhookConnectedUrl?: string;
-  webhookDeliveryUrl?: string;
-  webhookDisconnectedUrl?: string;
-  webhookStatusUrl?: string;
-  webhookPresenceUrl?: string;
-  webhookReceivedUrl?: string;
-  automaticReading?: boolean;
-  rejectCalls?: boolean;
-  callMessage?: string;
-  syncContacts?: boolean;
-}
-
-function mapInstance(raw: WApiInstanceRaw): EvolutionInstance {
+function mapInstance(raw: BackendInstance): EvolutionInstance {
   return {
-    id: raw.instanceId,
-    instanceName: raw.instanceName,
+    id: raw.id,
+    instanceName: raw.instance_name,
     status: raw.connected ? "open" : "close",
     token: raw.token,
     connected: raw.connected,
-    connectedPhone: raw.connectedPhone,
-    number: raw.connectedPhone,
-    contacts: raw.contacts,
-    chats: raw.chats,
-    messagesSent: raw.messagesSent,
-    messagesReceived: raw.messagesReceived,
-    webhookConnectedUrl: raw.webhookConnectedUrl,
-    webhookDisconnectedUrl: raw.webhookDisconnectedUrl,
-    webhookReceivedUrl: raw.webhookReceivedUrl,
-    webhookDeliveryUrl: raw.webhookDeliveryUrl,
-    webhookStatusUrl: raw.webhookStatusUrl,
-    webhookPresenceUrl: raw.webhookPresenceUrl,
-    rejectCalls: raw.rejectCalls,
-    callMessage: raw.callMessage,
-    automaticReading: raw.automaticReading,
-    createdAt: raw.created,
+    connectedPhone: raw.connected_phone,
+    number: raw.connected_phone,
+    webhookConnectedUrl: raw.webhook_connected || undefined,
+    webhookDisconnectedUrl: raw.webhook_disconnected || undefined,
+    webhookReceivedUrl: raw.webhook_received || undefined,
+    webhookDeliveryUrl: raw.webhook_delivery || undefined,
+    webhookStatusUrl: raw.webhook_message_status || undefined,
+    webhookPresenceUrl: raw.webhook_chat_presence || undefined,
+    automaticReading: raw.auto_read,
+    rejectCalls: raw.reject_calls,
+    callMessage: raw.call_message,
+    messagesSent: (raw.wapi as any)?.messagesSent,
+    messagesReceived: (raw.wapi as any)?.messagesReceived,
+    contacts: (raw.wapi as any)?.contacts,
+    chats: (raw.wapi as any)?.chats,
+    createdAt: raw.created_at,
   };
 }
 
 export const instancesService = {
-  // Integration endpoints (Bearer integration token)
   list: async (): Promise<EvolutionInstance[]> => {
-    const data = await api.get<WApiListResponse>("/integrator/instances?pageSize=100&page=1");
+    const data = await api.get<ListResponse>("/api/instances");
     return (data.instances || []).map(mapInstance);
   },
 
+  get: async (id: string): Promise<EvolutionInstance> => {
+    const data = await api.get<DetailResponse>(`/api/instances/${id}`);
+    return mapInstance(data.instance);
+  },
+
   create: (data: CreateInstancePayload) =>
-    api.post<WApiCreateResponse>("/integrator/create-instance", data),
+    api.post<CreateResponse>("/api/instances", data),
 
-  delete: (instanceId: string) =>
-    api.delete<WApiGenericResponse>(`/integrator/delete-instance?instanceId=${instanceId}`),
+  delete: (id: string) =>
+    api.delete<{ error: boolean; message: string }>(`/api/instances/${id}`),
 
-  // Instance PRO endpoints
-  qrCode: (instanceId: string) =>
-    api.get<WApiQrCodeResponse>(`/instance/qr-code?instanceId=${instanceId}&image=disable`),
+  qrCode: (id: string) =>
+    api.get<{ error: boolean; qrcode: string; instanceId: string }>(`/api/instances/${id}/qrcode`),
 
-  restart: (instanceId: string) =>
-    api.get<WApiGenericResponse>(`/instance/restart?instanceId=${instanceId}`),
+  restart: (id: string) =>
+    api.post<{ error: boolean; message: string }>(`/api/instances/${id}/restart`),
 
-  disconnect: (instanceId: string) =>
-    api.get<WApiGenericResponse>(`/instance/disconnect?instanceId=${instanceId}`),
+  disconnect: (id: string) =>
+    api.post<{ error: boolean; message: string }>(`/api/instances/${id}/disconnect`),
 
-  status: (instanceId: string) =>
-    api.get<WApiStatusResponse>(`/instance/status-instance?instanceId=${instanceId}`),
+  status: (id: string) =>
+    api.get<{ error: boolean; connected: boolean }>(`/api/instances/${id}/status`),
 
-  device: (instanceId: string) =>
-    api.get<WApiDeviceResponse>(`/instance/device?instanceId=${instanceId}`),
+  device: (id: string) =>
+    api.get<{ error: boolean; connectedPhone: string; name: string; platform: string; profilePictureUrl: string; isBusiness: boolean }>(`/api/instances/${id}/device`),
 
-  fetchInstance: (instanceId: string) =>
-    api.get<WApiFetchInstanceResponse>(`/instance/fetch-instance?instanceId=${instanceId}`),
+  rename: (id: string, instanceName: string) =>
+    api.put<{ error: boolean; message: string }>(`/api/instances/${id}/rename`, { instanceName }),
 
-  rename: (instanceId: string, instanceName: string) =>
-    api.put<WApiGenericResponse>(`/instance/update-name?instanceId=${instanceId}`, { instanceName }),
+  autoRead: (id: string, value: boolean) =>
+    api.put<{ error: boolean; message: string }>(`/api/instances/${id}/auto-read`, { value }),
 
-  autoRead: (instanceId: string, value: boolean) =>
-    api.put<WApiGenericResponse>(`/instance/update-auto-read-message?instanceId=${instanceId}`, { value: String(value) }),
+  updateWebhooks: (id: string, webhooks: Record<string, string>) =>
+    api.put<{ error: boolean; message: string; results: Record<string, string> }>(`/api/instances/${id}/webhooks`, webhooks),
+
+  webhookLogs: (id: string, page = 1, perPage = 10) =>
+    api.get<unknown>(`/api/instances/${id}/webhook-logs?page=${page}&perPage=${perPage}`),
 };
