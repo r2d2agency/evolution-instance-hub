@@ -4,11 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Info, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useInstanceDetails, useDeviceInfo, useRenameInstance, useAutoRead } from "@/hooks/useInstances";
+import { instancesService } from "@/services/instances";
 import { EvolutionInstance } from "@/types/evolution";
 import { Badge } from "@/components/ui/badge";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface InstanceDetailsDialogProps {
   instance: EvolutionInstance | null;
@@ -18,6 +21,7 @@ interface InstanceDetailsDialogProps {
 
 export function InstanceDetailsDialog({ instance, open, onOpenChange }: InstanceDetailsDialogProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: details, isLoading: detailsLoading } = useInstanceDetails(open && instance ? instance.id : "");
   const { data: device, isLoading: deviceLoading } = useDeviceInfo(open && instance?.connected ? instance.id : "");
   const renameMutation = useRenameInstance();
@@ -56,7 +60,7 @@ export function InstanceDetailsDialog({ instance, open, onOpenChange }: Instance
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); setRenameMode(false); }}>
-      <DialogContent className="bg-card border-border/50 max-w-md">
+      <DialogContent className="bg-card border-border/50 max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Info className="h-5 w-5 text-primary" />
@@ -132,6 +136,7 @@ export function InstanceDetailsDialog({ instance, open, onOpenChange }: Instance
               </div>
             </div>
 
+            {/* Leitura automática */}
             <div className="flex items-center justify-between pt-2">
               <div>
                 <p className="text-sm font-medium">Leitura automática</p>
@@ -144,6 +149,26 @@ export function InstanceDetailsDialog({ instance, open, onOpenChange }: Instance
               />
             </div>
 
+            {/* Rejeitar chamadas */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Rejeitar chamadas</p>
+                <p className="text-xs text-muted-foreground">Rejeitar chamadas automaticamente</p>
+              </div>
+              <Switch
+                checked={inst.rejectCalls ?? false}
+                disabled
+              />
+            </div>
+
+            {inst.callMessage && (
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Mensagem de rejeição</Label>
+                <p className="text-sm bg-muted rounded-md p-2 font-mono">{inst.callMessage}</p>
+              </div>
+            )}
+
+            {/* Renomear */}
             <div className="pt-2">
               {renameMode ? (
                 <div className="flex gap-2">
