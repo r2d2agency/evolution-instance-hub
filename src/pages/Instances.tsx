@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useInstances, useCreateInstance, useDeleteInstance, useDisconnectInstance, useRestartInstance } from "@/hooks/useInstances";
@@ -28,6 +30,14 @@ export default function Instances() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
+  const [rejectCalls, setRejectCalls] = useState(false);
+  const [callMessage, setCallMessage] = useState("");
+  const [webhookConnected, setWebhookConnected] = useState("");
+  const [webhookDisconnected, setWebhookDisconnected] = useState("");
+  const [webhookReceived, setWebhookReceived] = useState("");
+  const [webhookDelivery, setWebhookDelivery] = useState("");
+  const [webhookMessageStatus, setWebhookMessageStatus] = useState("");
+  const [webhookChatPresence, setWebhookChatPresence] = useState("");
 
   // Dialogs
   const [selectedInstance, setSelectedInstance] = useState<EvolutionInstance | null>(null);
@@ -43,14 +53,38 @@ export default function Instances() {
     });
   }, [instances, search, filterStatus]);
 
+  const resetCreateForm = () => {
+    setNewName("");
+    setRejectCalls(false);
+    setCallMessage("");
+    setWebhookConnected("");
+    setWebhookDisconnected("");
+    setWebhookReceived("");
+    setWebhookDelivery("");
+    setWebhookMessageStatus("");
+    setWebhookChatPresence("");
+  };
+
   const handleCreate = () => {
     createMutation.mutate(
-      { instanceName: newName },
+      {
+        instanceName: newName,
+        rejectCalls,
+        callMessage,
+        webhooks: {
+          connected: webhookConnected || undefined,
+          disconnected: webhookDisconnected || undefined,
+          received: webhookReceived || undefined,
+          delivery: webhookDelivery || undefined,
+          messageStatus: webhookMessageStatus || undefined,
+          chatPresence: webhookChatPresence || undefined,
+        },
+      },
       {
         onSuccess: () => {
           toast({ title: "Instância criada", description: `${newName} foi criada com sucesso.` });
           setCreateOpen(false);
-          setNewName("");
+          resetCreateForm();
         },
         onError: (err) => {
           toast({ title: "Erro ao criar", description: err.message, variant: "destructive" });
@@ -134,13 +168,64 @@ export default function Instances() {
       )}
 
       {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="bg-card border-border/50">
+      <Dialog open={createOpen} onOpenChange={(v) => { setCreateOpen(v); if (!v) resetCreateForm(); }}>
+        <DialogContent className="bg-card border-border/50 max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nova Instância</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-5 py-2">
             <div className="space-y-2">
-              <Label>Nome da Instância</Label>
+              <Label>Nome da Instância *</Label>
               <Input placeholder="minha-instancia" value={newName} onChange={(e) => setNewName(e.target.value)} className="font-mono bg-muted border-border/50" />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Rejeitar chamadas</p>
+                <p className="text-xs text-muted-foreground">Rejeitar chamadas recebidas automaticamente</p>
+              </div>
+              <Switch checked={rejectCalls} onCheckedChange={setRejectCalls} />
+            </div>
+
+            {rejectCalls && (
+              <div className="space-y-2">
+                <Label>Mensagem de rejeição</Label>
+                <Textarea
+                  placeholder="Não estamos disponíveis no momento."
+                  value={callMessage}
+                  onChange={(e) => setCallMessage(e.target.value)}
+                  className="bg-muted border-border/50 text-sm"
+                  rows={2}
+                />
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Webhooks (opcional)</Label>
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Conectado</Label>
+                  <Input placeholder="https://..." value={webhookConnected} onChange={(e) => setWebhookConnected(e.target.value)} className="font-mono text-xs bg-muted border-border/50" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Desconectado</Label>
+                  <Input placeholder="https://..." value={webhookDisconnected} onChange={(e) => setWebhookDisconnected(e.target.value)} className="font-mono text-xs bg-muted border-border/50" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Recebimento</Label>
+                  <Input placeholder="https://..." value={webhookReceived} onChange={(e) => setWebhookReceived(e.target.value)} className="font-mono text-xs bg-muted border-border/50" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Envio</Label>
+                  <Input placeholder="https://..." value={webhookDelivery} onChange={(e) => setWebhookDelivery(e.target.value)} className="font-mono text-xs bg-muted border-border/50" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Status da mensagem</Label>
+                  <Input placeholder="https://..." value={webhookMessageStatus} onChange={(e) => setWebhookMessageStatus(e.target.value)} className="font-mono text-xs bg-muted border-border/50" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Presença no chat</Label>
+                  <Input placeholder="https://..." value={webhookChatPresence} onChange={(e) => setWebhookChatPresence(e.target.value)} className="font-mono text-xs bg-muted border-border/50" />
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
