@@ -1,6 +1,6 @@
-// Hub Backend Configuration
-// VITE_API_URL = your backend URL on EasyPanel (e.g. https://hub-backend.easypanel.host)
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+// In production, API calls go through nginx reverse proxy (same origin = no CORS)
+// In dev, point VITE_API_URL to your local backend
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
