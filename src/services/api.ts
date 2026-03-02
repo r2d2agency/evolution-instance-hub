@@ -1,6 +1,6 @@
 // W-API Configuration
 // VITE_API_KEY = your W-API integration Bearer token
-export const API_BASE_URL = "https://api.w-api.app/v1/integrator";
+export const API_BASE_URL = "https://api.w-api.app/v1";
 const API_KEY = import.meta.env.VITE_API_KEY || "";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {

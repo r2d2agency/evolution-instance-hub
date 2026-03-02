@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { EvolutionInstance } from "@/types/evolution";
 import { InstanceCard } from "@/components/InstanceCard";
 import { WebhookDialog } from "@/components/WebhookDialog";
+import { QrCodeDialog } from "@/components/QrCodeDialog";
+import { InstanceDetailsDialog } from "@/components/InstanceDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Plus, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useInstances, useCreateInstance, useDeleteInstance } from "@/hooks/useInstances";
+import { useInstances, useCreateInstance, useDeleteInstance, useDisconnectInstance, useRestartInstance } from "@/hooks/useInstances";
 
 export default function Instances() {
   const { toast } = useToast();
@@ -19,15 +21,19 @@ export default function Instances() {
 
   const createMutation = useCreateInstance();
   const deleteMutation = useDeleteInstance();
+  const disconnectMutation = useDisconnectInstance();
+  const restartMutation = useRestartInstance();
 
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
 
-  // Webhook dialog
-  const [webhookInstance, setWebhookInstance] = useState<EvolutionInstance | null>(null);
+  // Dialogs
+  const [selectedInstance, setSelectedInstance] = useState<EvolutionInstance | null>(null);
   const [webhookOpen, setWebhookOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const filtered = useMemo(() => {
     return instances.filter((i) => {
@@ -60,9 +66,23 @@ export default function Instances() {
     });
   };
 
-  const handleWebhook = (instance: EvolutionInstance) => {
-    setWebhookInstance(instance);
-    setWebhookOpen(true);
+  const handleDisconnect = (instance: EvolutionInstance) => {
+    disconnectMutation.mutate(instance.id, {
+      onSuccess: () => toast({ title: "Desconectado", description: `${instance.instanceName} foi desconectada.` }),
+      onError: (err) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+    });
+  };
+
+  const handleRestart = (instance: EvolutionInstance) => {
+    restartMutation.mutate(instance.id, {
+      onSuccess: () => toast({ title: "Reiniciando", description: `${instance.instanceName} está sendo reiniciada.` }),
+      onError: (err) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+    });
+  };
+
+  const openDialog = (instance: EvolutionInstance, setter: (v: boolean) => void) => {
+    setSelectedInstance(instance);
+    setter(true);
   };
 
   return (
@@ -98,7 +118,11 @@ export default function Instances() {
             key={instance.id}
             instance={instance}
             onDelete={handleDelete}
-            onWebhook={handleWebhook}
+            onWebhook={(i) => openDialog(i, setWebhookOpen)}
+            onQrCode={(i) => openDialog(i, setQrOpen)}
+            onDisconnect={handleDisconnect}
+            onRestart={handleRestart}
+            onDetails={(i) => openDialog(i, setDetailsOpen)}
           />
         ))}
       </div>
@@ -129,11 +153,13 @@ export default function Instances() {
       </Dialog>
 
       {/* Webhook Dialog */}
-      <WebhookDialog
-        instance={webhookInstance}
-        open={webhookOpen}
-        onOpenChange={setWebhookOpen}
-      />
+      <WebhookDialog instance={selectedInstance} open={webhookOpen} onOpenChange={setWebhookOpen} />
+
+      {/* QR Code Dialog */}
+      <QrCodeDialog instance={selectedInstance} open={qrOpen} onOpenChange={setQrOpen} />
+
+      {/* Instance Details Dialog */}
+      <InstanceDetailsDialog instance={selectedInstance} open={detailsOpen} onOpenChange={setDetailsOpen} />
     </div>
   );
 }
