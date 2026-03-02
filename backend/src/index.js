@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import pool from "./db/pool.js";
 import instancesRouter from "./routes/instances.js";
 
 // Prevent unhandled errors from crashing the process
@@ -38,6 +39,38 @@ app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
   next();
 });
+
+// Auto-create tables on startup
+async function initDB() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS instances (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        instance_id VARCHAR(255) UNIQUE NOT NULL,
+        instance_name VARCHAR(255) NOT NULL,
+        token VARCHAR(512),
+        connected BOOLEAN DEFAULT false,
+        connected_phone VARCHAR(50),
+        webhook_connected TEXT,
+        webhook_disconnected TEXT,
+        webhook_delivery TEXT,
+        webhook_received TEXT,
+        webhook_message_status TEXT,
+        webhook_chat_presence TEXT,
+        auto_read BOOLEAN DEFAULT false,
+        reject_calls BOOLEAN DEFAULT false,
+        call_message TEXT,
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    console.log("✅ Database tables ready");
+  } catch (err) {
+    console.error("⚠️ DB init warning:", err.message);
+  }
+}
+initDB();
 
 // Health check (before other routes for fastest response)
 app.get("/api/health", (req, res) => {
