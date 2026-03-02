@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { mockInstances, mockGroups } from "@/data/mockData";
 import { EvolutionInstance, InstanceGroup } from "@/types/evolution";
 import { InstanceCard } from "@/components/InstanceCard";
 import { Button } from "@/components/ui/button";
@@ -18,8 +17,8 @@ export default function Instances() {
   const { data: apiInstances } = useInstances();
   const { data: apiGroups } = useGroups();
 
-  const instances: EvolutionInstance[] = apiInstances || mockInstances;
-  const groups: InstanceGroup[] = apiGroups || mockGroups;
+  const instances: EvolutionInstance[] = apiInstances || [];
+  const groups: InstanceGroup[] = apiGroups || [];
 
   const createMutation = useCreateInstance();
   const deleteMutation = useDeleteInstance();

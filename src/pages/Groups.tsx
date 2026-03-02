@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { mockGroups, mockInstances } from "@/data/mockData";
 import { EvolutionInstance, InstanceGroup } from "@/types/evolution";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,8 +16,8 @@ export default function Groups() {
   const { data: apiGroups } = useGroups();
   const { data: apiInstances } = useInstances();
 
-  const groups: InstanceGroup[] = apiGroups || mockGroups;
-  const instances: EvolutionInstance[] = apiInstances || mockInstances;
+  const groups: InstanceGroup[] = apiGroups || [];
+  const instances: EvolutionInstance[] = apiInstances || [];
 
   const createMutation = useCreateGroup();
   const updateMutation = useUpdateGroup();
