@@ -3,6 +3,14 @@ import express from "express";
 import cors from "cors";
 import instancesRouter from "./routes/instances.js";
 
+// Prevent unhandled errors from crashing the process
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err.message);
+});
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled Rejection:", err);
+});
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -31,13 +39,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
-app.use("/api/instances", instancesRouter);
-
-// Health check
+// Health check (before other routes for fastest response)
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
+
+// Routes
+app.use("/api/instances", instancesRouter);
 
 // 404
 app.use((req, res) => {
@@ -50,6 +58,12 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: true, message: "Erro interno do servidor" });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 W-API Hub Backend running on port ${PORT}`);
+});
+
+// Graceful shutdown
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, shutting down gracefully...");
+  server.close(() => process.exit(0));
 });
