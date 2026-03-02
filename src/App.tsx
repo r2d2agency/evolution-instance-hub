@@ -7,7 +7,6 @@ import { Layout } from "@/components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Instances from "./pages/Instances";
 import Groups from "./pages/Groups";
-import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,7 +22,7 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/instances" element={<Instances />} />
             <Route path="/groups" element={<Groups />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>
