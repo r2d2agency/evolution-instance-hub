@@ -26,7 +26,11 @@ export const wapi = {
   createInstance: (instanceName, rejectCalls = false, callMessage = "") =>
     wapiRequest("/integrator/create-instance", {
       method: "POST",
-      body: JSON.stringify({ instanceName, rejectCalls, callMessage }),
+      body: JSON.stringify({
+        instanceName,
+        rejectCalls: rejectCalls ?? false,
+        callMessage: callMessage || "",
+      }),
     }),
 
   deleteInstance: (instanceId) =>
