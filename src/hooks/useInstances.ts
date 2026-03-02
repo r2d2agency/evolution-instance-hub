@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { instancesService, CreateInstancePayload, UpdateInstancePayload, SetWebhookPayload } from "@/services/instances";
+import { instancesService, CreateInstancePayload, SetWebhookPayload } from "@/services/instances";
 
 export function useInstances() {
   return useQuery({
@@ -8,11 +8,11 @@ export function useInstances() {
   });
 }
 
-export function useInstance(id: string) {
+export function useInstance(name: string) {
   return useQuery({
-    queryKey: ["instances", id],
-    queryFn: () => instancesService.get(id),
-    enabled: !!id,
+    queryKey: ["instances", name],
+    queryFn: () => instancesService.get(name),
+    enabled: !!name,
   });
 }
 
@@ -24,18 +24,10 @@ export function useCreateInstance() {
   });
 }
 
-export function useUpdateInstance() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateInstancePayload }) => instancesService.update(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
-  });
-}
-
 export function useDeleteInstance() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => instancesService.delete(id),
+    mutationFn: (name: string) => instancesService.delete(name),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
   });
 }
@@ -43,7 +35,7 @@ export function useDeleteInstance() {
 export function useConnectInstance() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => instancesService.connect(id),
+    mutationFn: (name: string) => instancesService.connect(name),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
   });
 }
@@ -51,7 +43,7 @@ export function useConnectInstance() {
 export function useDisconnectInstance() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => instancesService.disconnect(id),
+    mutationFn: (name: string) => instancesService.disconnect(name),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
   });
 }
@@ -59,13 +51,7 @@ export function useDisconnectInstance() {
 export function useSetWebhook() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: SetWebhookPayload }) => instancesService.setWebhook(id, data),
+    mutationFn: ({ name, data }: { name: string; data: SetWebhookPayload }) => instancesService.setWebhook(name, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
-  });
-}
-
-export function useRegenerateToken() {
-  return useMutation({
-    mutationFn: (id: string) => instancesService.regenerateToken(id),
   });
 }
