@@ -23,3 +23,57 @@ export function useDeleteInstance() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
   });
 }
+
+export function useQrCode() {
+  return useMutation({
+    mutationFn: (id: string) => instancesService.qrCode(id),
+  });
+}
+
+export function useRestartInstance() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => instancesService.restart(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
+  });
+}
+
+export function useDisconnectInstance() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => instancesService.disconnect(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
+  });
+}
+
+export function useRenameInstance() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => instancesService.rename(id, name),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
+  });
+}
+
+export function useAutoRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, value }: { id: string; value: boolean }) => instancesService.autoRead(id, value),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
+  });
+}
+
+export function useInstanceDetails(id: string) {
+  return useQuery({
+    queryKey: ["instance-details", id],
+    queryFn: () => instancesService.fetchInstance(id),
+    enabled: !!id,
+  });
+}
+
+export function useDeviceInfo(id: string) {
+  return useQuery({
+    queryKey: ["device", id],
+    queryFn: () => instancesService.device(id),
+    enabled: !!id,
+  });
+}

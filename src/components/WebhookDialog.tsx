@@ -9,7 +9,7 @@ import { useUpdateWebhook } from "@/hooks/useWebhooks";
 import { WebhookType, webhookLabels } from "@/services/webhooks";
 import { EvolutionInstance } from "@/types/evolution";
 
-const webhookTypes: WebhookType[] = ["connected", "disconnected", "delivery", "received", "message-status"];
+const webhookTypes: WebhookType[] = ["connected", "disconnected", "delivery", "received", "message-status", "chat-presence"];
 
 interface WebhookDialogProps {
   instance: EvolutionInstance | null;

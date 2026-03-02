@@ -19,6 +19,10 @@ import {
   Copy,
   Check,
   Webhook,
+  QrCode,
+  Unplug,
+  RotateCw,
+  Info,
 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -45,9 +49,13 @@ interface InstanceCardProps {
   instance: EvolutionInstance;
   onDelete?: (instance: EvolutionInstance) => void;
   onWebhook?: (instance: EvolutionInstance) => void;
+  onQrCode?: (instance: EvolutionInstance) => void;
+  onDisconnect?: (instance: EvolutionInstance) => void;
+  onRestart?: (instance: EvolutionInstance) => void;
+  onDetails?: (instance: EvolutionInstance) => void;
 }
 
-export function InstanceCard({ instance, onDelete, onWebhook }: InstanceCardProps) {
+export function InstanceCard({ instance, onDelete, onWebhook, onQrCode, onDisconnect, onRestart, onDetails }: InstanceCardProps) {
   const status = statusConfig[instance.status];
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -65,7 +73,7 @@ export function InstanceCard({ instance, onDelete, onWebhook }: InstanceCardProp
     <Card className="bg-card border-border/50 hover:border-primary/20 transition-all duration-200 group">
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between">
-          <div className="space-y-1 min-w-0">
+          <div className="space-y-1 min-w-0 cursor-pointer" onClick={() => onDetails?.(instance)}>
             <h3 className="text-sm font-semibold text-foreground truncate font-mono">
               {instance.instanceName}
             </h3>
@@ -87,15 +95,30 @@ export function InstanceCard({ instance, onDelete, onWebhook }: InstanceCardProp
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => onDetails?.(instance)}>
+                <Info className="mr-2 h-4 w-4" /> Detalhes
+              </DropdownMenuItem>
+              {instance.status === "close" ? (
+                <DropdownMenuItem onClick={() => onQrCode?.(instance)}>
+                  <QrCode className="mr-2 h-4 w-4" /> Conectar (QR Code)
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onClick={() => onDisconnect?.(instance)}>
+                  <Unplug className="mr-2 h-4 w-4" /> Desconectar
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => onRestart?.(instance)}>
+                <RotateCw className="mr-2 h-4 w-4" /> Reiniciar
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onWebhook?.(instance)}>
+                <Webhook className="mr-2 h-4 w-4" /> Webhooks
+              </DropdownMenuItem>
               {instance.token && (
                 <DropdownMenuItem onClick={copyToken}>
                   {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
                   Copiar Token
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={() => onWebhook?.(instance)}>
-                <Webhook className="mr-2 h-4 w-4" /> Webhooks
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => onDelete?.(instance)}
