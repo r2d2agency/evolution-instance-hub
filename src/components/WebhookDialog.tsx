@@ -5,11 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Webhook, Check, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useUpdateWebhook } from "@/hooks/useWebhooks";
 import { WebhookType, webhookLabels } from "@/services/webhooks";
+import { instancesService } from "@/services/instances";
 import { EvolutionInstance } from "@/types/evolution";
 
-const webhookTypes: WebhookType[] = ["connected", "disconnected", "delivery", "received", "message-status", "chat-presence"];
+const webhookTypes: WebhookType[] = ["connected", "disconnected", "delivery", "received", "messageStatus", "chatPresence"];
 
 interface WebhookDialogProps {
   instance: EvolutionInstance | null;
@@ -19,9 +19,7 @@ interface WebhookDialogProps {
 
 export function WebhookDialog({ instance, open, onOpenChange }: WebhookDialogProps) {
   const { toast } = useToast();
-  const updateMutation = useUpdateWebhook();
 
-  // Map instance webhook URLs to their types
   const getInitialUrl = (type: WebhookType): string => {
     if (!instance) return "";
     switch (type) {
@@ -29,7 +27,8 @@ export function WebhookDialog({ instance, open, onOpenChange }: WebhookDialogPro
       case "disconnected": return instance.webhookDisconnectedUrl || "";
       case "delivery": return instance.webhookDeliveryUrl || "";
       case "received": return instance.webhookReceivedUrl || "";
-      case "message-status": return instance.webhookStatusUrl || "";
+      case "messageStatus": return instance.webhookStatusUrl || "";
+      case "chatPresence": return instance.webhookPresenceUrl || "";
       default: return "";
     }
   };
@@ -40,35 +39,30 @@ export function WebhookDialog({ instance, open, onOpenChange }: WebhookDialogPro
     return initial as Record<WebhookType, string>;
   });
 
-  const [saving, setSaving] = useState<WebhookType | null>(null);
-  const [saved, setSaved] = useState<Set<WebhookType>>(new Set());
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  // Reset state when instance changes
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen && instance) {
       const initial: Record<string, string> = {};
       webhookTypes.forEach((t) => (initial[t] = getInitialUrl(t)));
       setUrls(initial as Record<WebhookType, string>);
-      setSaved(new Set());
+      setSaved(false);
     }
     onOpenChange(isOpen);
   };
 
-  const handleSave = async (type: WebhookType) => {
+  const handleSaveAll = async () => {
     if (!instance) return;
-    setSaving(type);
+    setSaving(true);
     try {
-      await updateMutation.mutateAsync({
-        instanceId: instance.id,
-        type,
-        url: urls[type],
-      });
-      setSaved((prev) => new Set(prev).add(type));
-      toast({ title: "Webhook salvo", description: `${webhookLabels[type]} atualizado com sucesso.` });
+      await instancesService.updateWebhooks(instance.id, urls);
+      setSaved(true);
+      toast({ title: "Webhooks salvos", description: "Todos os webhooks foram atualizados." });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     } finally {
-      setSaving(null);
+      setSaving(false);
     }
   };
 
@@ -90,35 +84,22 @@ export function WebhookDialog({ instance, open, onOpenChange }: WebhookDialogPro
           {webhookTypes.map((type) => (
             <div key={type} className="space-y-1.5">
               <Label className="text-xs font-medium">{webhookLabels[type]}</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="https://..."
-                  value={urls[type]}
-                  onChange={(e) => setUrls((prev) => ({ ...prev, [type]: e.target.value }))}
-                  className="font-mono bg-muted border-border/50 text-xs"
-                />
-                <Button
-                  size="sm"
-                  variant={saved.has(type) ? "outline" : "default"}
-                  onClick={() => handleSave(type)}
-                  disabled={saving === type}
-                  className="shrink-0"
-                >
-                  {saving === type ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : saved.has(type) ? (
-                    <Check className="h-4 w-4 text-success" />
-                  ) : (
-                    "Salvar"
-                  )}
-                </Button>
-              </div>
+              <Input
+                placeholder="https://..."
+                value={urls[type]}
+                onChange={(e) => setUrls((prev) => ({ ...prev, [type]: e.target.value }))}
+                className="font-mono bg-muted border-border/50 text-xs"
+              />
             </div>
           ))}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={handleSaveAll} disabled={saving} className="gap-2">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4" /> : null}
+            {saving ? "Salvando..." : saved ? "Salvo!" : "Salvar Webhooks"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

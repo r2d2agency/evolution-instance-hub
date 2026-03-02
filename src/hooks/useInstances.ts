@@ -65,7 +65,7 @@ export function useAutoRead() {
 export function useInstanceDetails(id: string) {
   return useQuery({
     queryKey: ["instance-details", id],
-    queryFn: () => instancesService.fetchInstance(id),
+    queryFn: () => instancesService.get(id),
     enabled: !!id,
   });
 }

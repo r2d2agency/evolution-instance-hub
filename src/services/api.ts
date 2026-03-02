@@ -1,7 +1,6 @@
-// W-API Configuration
-// VITE_API_KEY = your W-API integration Bearer token
-export const API_BASE_URL = "https://api.w-api.app/v1";
-const API_KEY = import.meta.env.VITE_API_KEY || "";
+// Hub Backend Configuration
+// VITE_API_URL = your backend URL on EasyPanel (e.g. https://hub-backend.easypanel.host)
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
@@ -10,7 +9,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${API_KEY}`,
       ...options.headers,
     },
   };
