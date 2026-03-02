@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Copy,
   Check,
+  Webhook,
 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -43,9 +44,10 @@ const statusConfig: Record<InstanceStatus, { label: string; className: string; i
 interface InstanceCardProps {
   instance: EvolutionInstance;
   onDelete?: (instance: EvolutionInstance) => void;
+  onWebhook?: (instance: EvolutionInstance) => void;
 }
 
-export function InstanceCard({ instance, onDelete }: InstanceCardProps) {
+export function InstanceCard({ instance, onDelete, onWebhook }: InstanceCardProps) {
   const status = statusConfig[instance.status];
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -91,6 +93,9 @@ export function InstanceCard({ instance, onDelete }: InstanceCardProps) {
                   Copiar Token
                 </DropdownMenuItem>
               )}
+              <DropdownMenuItem onClick={() => onWebhook?.(instance)}>
+                <Webhook className="mr-2 h-4 w-4" /> Webhooks
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => onDelete?.(instance)}

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { EvolutionInstance } from "@/types/evolution";
 import { InstanceCard } from "@/components/InstanceCard";
+import { WebhookDialog } from "@/components/WebhookDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,6 +24,10 @@ export default function Instances() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
+
+  // Webhook dialog
+  const [webhookInstance, setWebhookInstance] = useState<EvolutionInstance | null>(null);
+  const [webhookOpen, setWebhookOpen] = useState(false);
 
   const filtered = useMemo(() => {
     return instances.filter((i) => {
@@ -53,6 +58,11 @@ export default function Instances() {
       onSuccess: () => toast({ title: "Instância removida", description: `${instance.instanceName} foi excluída.`, variant: "destructive" }),
       onError: (err) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
     });
+  };
+
+  const handleWebhook = (instance: EvolutionInstance) => {
+    setWebhookInstance(instance);
+    setWebhookOpen(true);
   };
 
   return (
@@ -88,6 +98,7 @@ export default function Instances() {
             key={instance.id}
             instance={instance}
             onDelete={handleDelete}
+            onWebhook={handleWebhook}
           />
         ))}
       </div>
@@ -116,6 +127,13 @@ export default function Instances() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Webhook Dialog */}
+      <WebhookDialog
+        instance={webhookInstance}
+        open={webhookOpen}
+        onOpenChange={setWebhookOpen}
+      />
     </div>
   );
 }
