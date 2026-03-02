@@ -3,80 +3,84 @@ import { api } from "./api";
 
 export interface CreateInstancePayload {
   instanceName: string;
-  integration?: string;
-  qrcode?: boolean;
+  rejectCalls?: boolean;
+  callMessage?: string;
 }
 
-export interface UpdateInstancePayload {
-  instanceName?: string;
-  groupId?: string | null;
+// W-API raw response for list
+interface WApiInstanceRaw {
+  instanceId: string;
+  token: string;
+  created: string;
+  instanceName: string;
+  connected: boolean;
+  connectedPhone?: string;
+  contacts?: number;
+  chats?: number;
+  messagesSent?: number;
+  messagesReceived?: number;
+  webhookConnectedUrl?: string;
+  webhookDisconnectedUrl?: string;
+  webhookReceivedUrl?: string;
+  webhookDeliveryUrl?: string;
+  webhookStatusUrl?: string;
+  webhookPresenceUrl?: string;
+  automaticReading?: boolean;
+  rejectCalls?: boolean;
+  callMessage?: string;
 }
 
-export interface SetWebhookPayload {
-  url: string;
-  webhook_by_events?: boolean;
-  webhook_base64?: boolean;
-  events?: string[];
+interface WApiListResponse {
+  error: boolean;
+  instances: WApiInstanceRaw[];
+  total: number;
+  totalPage: number;
+  pageSize: number;
+  page: number;
 }
 
-// Evolution API response types
-interface EvolutionInstanceRaw {
-  instance: {
-    instanceName: string;
-    instanceId: string;
-    status: string;
-    owner?: string;
-    profilePictureUrl?: string;
-    integration?: string;
-  };
+interface WApiCreateResponse {
+  error: boolean;
+  message: string;
+  instanceId: string;
+  token: string;
 }
 
-function mapInstance(raw: EvolutionInstanceRaw): EvolutionInstance {
+function mapInstance(raw: WApiInstanceRaw): EvolutionInstance {
   return {
-    id: raw.instance.instanceId || raw.instance.instanceName,
-    instanceName: raw.instance.instanceName,
-    status: (raw.instance.status === "open" ? "open" : raw.instance.status === "connecting" ? "connecting" : "close") as EvolutionInstance["status"],
-    owner: raw.instance.owner,
-    profilePictureUrl: raw.instance.profilePictureUrl,
-    createdAt: new Date().toISOString(),
+    id: raw.instanceId,
+    instanceName: raw.instanceName,
+    status: raw.connected ? "open" : "close",
+    token: raw.token,
+    connected: raw.connected,
+    connectedPhone: raw.connectedPhone,
+    number: raw.connectedPhone,
+    contacts: raw.contacts,
+    chats: raw.chats,
+    messagesSent: raw.messagesSent,
+    messagesReceived: raw.messagesReceived,
+    webhookConnectedUrl: raw.webhookConnectedUrl,
+    webhookDisconnectedUrl: raw.webhookDisconnectedUrl,
+    webhookReceivedUrl: raw.webhookReceivedUrl,
+    webhookDeliveryUrl: raw.webhookDeliveryUrl,
+    webhookStatusUrl: raw.webhookStatusUrl,
+    webhookPresenceUrl: raw.webhookPresenceUrl,
+    rejectCalls: raw.rejectCalls,
+    callMessage: raw.callMessage,
+    automaticReading: raw.automaticReading,
+    createdAt: raw.created,
   };
 }
 
 export const instancesService = {
   list: async (): Promise<EvolutionInstance[]> => {
-    const data = await api.get<EvolutionInstanceRaw[]>("/instance/fetchInstances");
-    return data.map(mapInstance);
-  },
-
-  get: async (name: string): Promise<EvolutionInstance> => {
-    const data = await api.get<EvolutionInstanceRaw>(`/instance/fetchInstances?instanceName=${name}`);
-    return mapInstance(data);
+    const data = await api.get<WApiListResponse>("/instances?pageSize=100&page=1");
+    return (data.instances || []).map(mapInstance);
   },
 
   create: (data: CreateInstancePayload) =>
-    api.post<{ instance: { instanceName: string; instanceId: string; status: string }; qrcode?: { base64: string } }>("/instance/create", {
-      instanceName: data.instanceName,
-      integration: data.integration || "WHATSAPP-BAILEYS",
-      qrcode: data.qrcode ?? true,
-    }),
+    api.post<WApiCreateResponse>("/create-instance", data),
 
-  delete: (name: string) => api.delete<void>(`/instance/delete/${name}`),
-
-  connect: (name: string) =>
-    api.get<{ base64?: string; code?: string }>(`/instance/connect/${name}`),
-
-  disconnect: (name: string) =>
-    api.delete<void>(`/instance/logout/${name}`),
-
-  restart: (name: string) =>
-    api.put<void>(`/instance/restart/${name}`, {}),
-
-  setWebhook: (name: string, data: SetWebhookPayload) =>
-    api.post<void>(`/webhook/set/${name}`, data),
-
-  getWebhook: (name: string) =>
-    api.get<{ url: string; events: string[] }>(`/webhook/find/${name}`),
-
-  connectionState: (name: string) =>
-    api.get<{ instance: { state: string } }>(`/instance/connectionState/${name}`),
+  delete: (instanceId: string) =>
+    api.delete<{ error: boolean; message: string }>(`/delete-instance?instanceId=${instanceId}`),
 };
