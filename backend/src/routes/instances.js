@@ -11,13 +11,10 @@ import {
 const router = Router();
 
 // ─── CREATE INSTANCE ─────────────────────────────────────────
-// POST /api/instances
-// Body: { instanceName, webhooks: { connected, disconnected, delivery, received, messageStatus, chatPresence }, rejectCalls, callMessage, metadata }
 router.post("/", async (req, res) => {
   try {
     const parsed = createInstanceSchema.parse(req.body);
 
-    // 1. Create instance on W-API
     const wapiRes = await wapi.createInstance(
       parsed.instanceName,
       parsed.rejectCalls,
@@ -31,7 +28,7 @@ router.post("/", async (req, res) => {
     const instanceId = wapiRes.instanceId;
     const token = wapiRes.token;
 
-    // 2. Configure webhooks on W-API
+    // Configure webhooks using instance token
     const webhookTypes = {
       connected: parsed.webhooks.connected,
       disconnected: parsed.webhooks.disconnected,
@@ -45,7 +42,7 @@ router.post("/", async (req, res) => {
     for (const [type, url] of Object.entries(webhookTypes)) {
       if (url) {
         try {
-          await wapi.updateWebhook(instanceId, type, url);
+          await wapi.updateWebhook(instanceId, type, url, token);
           webhookResults[type] = "ok";
         } catch (err) {
           webhookResults[type] = `error: ${err.message}`;
@@ -53,7 +50,6 @@ router.post("/", async (req, res) => {
       }
     }
 
-    // 3. Save to database
     const saved = await instancesRepo.create({
       instance_id: instanceId,
       instance_name: parsed.instanceName,
@@ -69,12 +65,7 @@ router.post("/", async (req, res) => {
       metadata: parsed.metadata,
     });
 
-    res.status(201).json({
-      error: false,
-      message: "Instância criada com sucesso",
-      instance: saved,
-      webhookResults,
-    });
+    res.status(201).json({ error: false, message: "Instância criada com sucesso", instance: saved, webhookResults });
   } catch (err) {
     if (err.name === "ZodError") {
       return res.status(422).json({ error: true, message: "Dados inválidos", details: err.errors });
@@ -85,7 +76,6 @@ router.post("/", async (req, res) => {
 });
 
 // ─── SYNC FROM W-API ─────────────────────────────────────────
-// POST /api/instances/sync
 router.post("/sync", async (req, res) => {
   try {
     let page = 1;
@@ -144,7 +134,6 @@ router.post("/sync", async (req, res) => {
 });
 
 // ─── LIST INSTANCES ──────────────────────────────────────────
-// GET /api/instances
 router.get("/", async (req, res) => {
   try {
     let instances = [];
@@ -152,15 +141,14 @@ router.get("/", async (req, res) => {
       instances = await instancesRepo.findAll();
     } catch (dbErr) {
       console.error("DB findAll error:", dbErr.message);
-      // Return empty list if DB is unavailable
       return res.json({ error: false, instances: [] });
     }
 
-    // Enrich with live status from W-API
+    // Enrich with live status using instance token
     const enriched = await Promise.all(
       instances.map(async (inst) => {
         try {
-          const status = await wapi.status(inst.instance_id);
+          const status = await wapi.status(inst.instance_id, inst.token);
           return { ...inst, connected: status.connected };
         } catch {
           return inst;
@@ -176,22 +164,20 @@ router.get("/", async (req, res) => {
 });
 
 // ─── GET INSTANCE DETAILS ────────────────────────────────────
-// GET /api/instances/:id
 router.get("/:id", async (req, res) => {
   try {
     const inst = await instancesRepo.findById(req.params.id);
     if (!inst) return res.status(404).json({ error: true, message: "Instância não encontrada" });
 
-    // Enrich with W-API data
     let wapiData = {};
     try {
-      wapiData = await wapi.fetchInstance(inst.instance_id);
+      wapiData = await wapi.fetchInstance(inst.instance_id, inst.token);
     } catch {}
 
     let deviceData = {};
     try {
       if (wapiData.connected) {
-        deviceData = await wapi.device(inst.instance_id);
+        deviceData = await wapi.device(inst.instance_id, inst.token);
       }
     } catch {}
 
@@ -203,22 +189,18 @@ router.get("/:id", async (req, res) => {
 });
 
 // ─── DELETE INSTANCE ─────────────────────────────────────────
-// DELETE /api/instances/:id
 router.delete("/:id", async (req, res) => {
   try {
     const inst = await instancesRepo.findById(req.params.id);
     if (!inst) return res.status(404).json({ error: true, message: "Instância não encontrada" });
 
-    // Delete from W-API
     try {
       await wapi.deleteInstance(inst.instance_id);
     } catch (err) {
       console.warn("W-API delete warning:", err.message);
     }
 
-    // Delete from DB
     await instancesRepo.delete(req.params.id);
-
     res.json({ error: false, message: "Instância excluída" });
   } catch (err) {
     console.error("DELETE /instances/:id error:", err.message);
@@ -227,13 +209,12 @@ router.delete("/:id", async (req, res) => {
 });
 
 // ─── QR CODE ─────────────────────────────────────────────────
-// GET /api/instances/:id/qrcode
 router.get("/:id/qrcode", async (req, res) => {
   try {
     const inst = await instancesRepo.findById(req.params.id);
     if (!inst) return res.status(404).json({ error: true, message: "Instância não encontrada" });
 
-    const data = await wapi.qrCode(inst.instance_id);
+    const data = await wapi.qrCode(inst.instance_id, inst.token);
     res.json({ error: false, ...data });
   } catch (err) {
     console.error("GET /qrcode error:", err.message);
@@ -242,13 +223,12 @@ router.get("/:id/qrcode", async (req, res) => {
 });
 
 // ─── DISCONNECT ──────────────────────────────────────────────
-// POST /api/instances/:id/disconnect
 router.post("/:id/disconnect", async (req, res) => {
   try {
     const inst = await instancesRepo.findById(req.params.id);
     if (!inst) return res.status(404).json({ error: true, message: "Instância não encontrada" });
 
-    const data = await wapi.disconnect(inst.instance_id);
+    const data = await wapi.disconnect(inst.instance_id, inst.token);
     await instancesRepo.update(req.params.id, { connected: false });
     res.json({ error: false, ...data });
   } catch (err) {
@@ -258,13 +238,12 @@ router.post("/:id/disconnect", async (req, res) => {
 });
 
 // ─── RESTART ─────────────────────────────────────────────────
-// POST /api/instances/:id/restart
 router.post("/:id/restart", async (req, res) => {
   try {
     const inst = await instancesRepo.findById(req.params.id);
     if (!inst) return res.status(404).json({ error: true, message: "Instância não encontrada" });
 
-    const data = await wapi.restart(inst.instance_id);
+    const data = await wapi.restart(inst.instance_id, inst.token);
     res.json({ error: false, ...data });
   } catch (err) {
     console.error("POST /restart error:", err.message);
@@ -273,7 +252,6 @@ router.post("/:id/restart", async (req, res) => {
 });
 
 // ─── UPDATE WEBHOOKS ─────────────────────────────────────────
-// PUT /api/instances/:id/webhooks
 router.put("/:id/webhooks", async (req, res) => {
   try {
     const parsed = updateWebhooksSchema.parse(req.body);
@@ -295,7 +273,7 @@ router.put("/:id/webhooks", async (req, res) => {
     for (const [type, { field, value }] of Object.entries(webhookMap)) {
       if (value !== undefined) {
         try {
-          await wapi.updateWebhook(inst.instance_id, type, value);
+          await wapi.updateWebhook(inst.instance_id, type, value, inst.token);
           results[type] = "ok";
           dbUpdate[field] = value;
         } catch (err) {
@@ -319,14 +297,13 @@ router.put("/:id/webhooks", async (req, res) => {
 });
 
 // ─── AUTO READ ───────────────────────────────────────────────
-// PUT /api/instances/:id/auto-read
 router.put("/:id/auto-read", async (req, res) => {
   try {
     const parsed = autoReadSchema.parse(req.body);
     const inst = await instancesRepo.findById(req.params.id);
     if (!inst) return res.status(404).json({ error: true, message: "Instância não encontrada" });
 
-    await wapi.autoRead(inst.instance_id, parsed.value);
+    await wapi.autoRead(inst.instance_id, parsed.value, inst.token);
     await instancesRepo.update(req.params.id, { auto_read: parsed.value });
 
     res.json({ error: false, message: parsed.value ? "Leitura automática ativada" : "Leitura automática desativada" });
@@ -340,14 +317,13 @@ router.put("/:id/auto-read", async (req, res) => {
 });
 
 // ─── RENAME ──────────────────────────────────────────────────
-// PUT /api/instances/:id/rename
 router.put("/:id/rename", async (req, res) => {
   try {
     const parsed = renameSchema.parse(req.body);
     const inst = await instancesRepo.findById(req.params.id);
     if (!inst) return res.status(404).json({ error: true, message: "Instância não encontrada" });
 
-    await wapi.rename(inst.instance_id, parsed.instanceName);
+    await wapi.rename(inst.instance_id, parsed.instanceName, inst.token);
     await instancesRepo.update(req.params.id, { instance_name: parsed.instanceName });
 
     res.json({ error: false, message: "Instância renomeada" });
@@ -361,13 +337,12 @@ router.put("/:id/rename", async (req, res) => {
 });
 
 // ─── DEVICE INFO ─────────────────────────────────────────────
-// GET /api/instances/:id/device
 router.get("/:id/device", async (req, res) => {
   try {
     const inst = await instancesRepo.findById(req.params.id);
     if (!inst) return res.status(404).json({ error: true, message: "Instância não encontrada" });
 
-    const data = await wapi.device(inst.instance_id);
+    const data = await wapi.device(inst.instance_id, inst.token);
     res.json({ error: false, ...data });
   } catch (err) {
     console.error("GET /device error:", err.message);
@@ -376,15 +351,12 @@ router.get("/:id/device", async (req, res) => {
 });
 
 // ─── STATUS ──────────────────────────────────────────────────
-// GET /api/instances/:id/status
 router.get("/:id/status", async (req, res) => {
   try {
     const inst = await instancesRepo.findById(req.params.id);
     if (!inst) return res.status(404).json({ error: true, message: "Instância não encontrada" });
 
-    const data = await wapi.status(inst.instance_id);
-    
-    // Sync status to DB
+    const data = await wapi.status(inst.instance_id, inst.token);
     await instancesRepo.update(req.params.id, { connected: data.connected });
 
     res.json({ error: false, ...data });
@@ -395,7 +367,6 @@ router.get("/:id/status", async (req, res) => {
 });
 
 // ─── WEBHOOK LOGS ────────────────────────────────────────────
-// GET /api/instances/:id/webhook-logs
 router.get("/:id/webhook-logs", async (req, res) => {
   try {
     const inst = await instancesRepo.findById(req.params.id);
@@ -403,7 +374,7 @@ router.get("/:id/webhook-logs", async (req, res) => {
 
     const page = parseInt(req.query.page) || 1;
     const perPage = parseInt(req.query.perPage) || 10;
-    const data = await wapi.fetchWebhookLogs(inst.instance_id, page, perPage);
+    const data = await wapi.fetchWebhookLogs(inst.instance_id, inst.token, page, perPage);
     res.json({ error: false, ...data });
   } catch (err) {
     console.error("GET /webhook-logs error:", err.message);

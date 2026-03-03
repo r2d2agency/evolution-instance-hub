@@ -1,7 +1,7 @@
 const WAPI_BASE = process.env.WAPI_BASE_URL || "https://api.w-api.app/v1";
 const WAPI_TOKEN = process.env.WAPI_TOKEN || "";
 
-async function wapiRequest(path, options = {}) {
+async function wapiRequest(path, options = {}, token = WAPI_TOKEN) {
   const url = `${WAPI_BASE}${path}`;
 
   console.log(`[W-API] ${options.method || "GET"} ${url}`);
@@ -11,7 +11,7 @@ async function wapiRequest(path, options = {}) {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${WAPI_TOKEN}`,
+      Authorization: `Bearer ${token}`,
       ...options.headers,
     },
   });
@@ -34,7 +34,7 @@ async function wapiRequest(path, options = {}) {
 }
 
 export const wapi = {
-  // Integration endpoints
+  // ─── Integrator endpoints (use integrator token) ───
   createInstance: (instanceName, rejectCalls = false, callMessage = "") => {
     return wapiRequest("/integrator/create-instance", {
       method: "POST",
@@ -52,39 +52,39 @@ export const wapi = {
   listInstances: (page = 1, pageSize = 100) =>
     wapiRequest(`/integrator/instances?pageSize=${pageSize}&page=${page}`),
 
-  // Instance PRO endpoints
-  qrCode: (instanceId) =>
-    wapiRequest(`/instance/qr-code?instanceId=${instanceId}&image=disable`),
+  // ─── Instance endpoints (use instance token) ───
+  qrCode: (instanceId, instanceToken) =>
+    wapiRequest(`/instance/qr-code?instanceId=${instanceId}&image=disable`, {}, instanceToken),
 
-  restart: (instanceId) =>
-    wapiRequest(`/instance/restart?instanceId=${instanceId}`),
+  restart: (instanceId, instanceToken) =>
+    wapiRequest(`/instance/restart?instanceId=${instanceId}`, {}, instanceToken),
 
-  disconnect: (instanceId) =>
-    wapiRequest(`/instance/disconnect?instanceId=${instanceId}`),
+  disconnect: (instanceId, instanceToken) =>
+    wapiRequest(`/instance/disconnect?instanceId=${instanceId}`, {}, instanceToken),
 
-  status: (instanceId) =>
-    wapiRequest(`/instance/status-instance?instanceId=${instanceId}`),
+  status: (instanceId, instanceToken) =>
+    wapiRequest(`/instance/status-instance?instanceId=${instanceId}`, {}, instanceToken),
 
-  device: (instanceId) =>
-    wapiRequest(`/instance/device?instanceId=${instanceId}`),
+  device: (instanceId, instanceToken) =>
+    wapiRequest(`/instance/device?instanceId=${instanceId}`, {}, instanceToken),
 
-  fetchInstance: (instanceId) =>
-    wapiRequest(`/instance/fetch-instance?instanceId=${instanceId}`),
+  fetchInstance: (instanceId, instanceToken) =>
+    wapiRequest(`/instance/fetch-instance?instanceId=${instanceId}`, {}, instanceToken),
 
-  rename: (instanceId, instanceName) =>
+  rename: (instanceId, instanceName, instanceToken) =>
     wapiRequest(`/instance/update-name?instanceId=${instanceId}`, {
       method: "PUT",
       body: JSON.stringify({ instanceName }),
-    }),
+    }, instanceToken),
 
-  autoRead: (instanceId, value) =>
+  autoRead: (instanceId, value, instanceToken) =>
     wapiRequest(`/instance/update-auto-read-message?instanceId=${instanceId}`, {
       method: "PUT",
       body: JSON.stringify({ value: String(value) }),
-    }),
+    }, instanceToken),
 
-  // Webhook endpoints
-  updateWebhook: (instanceId, type, url) => {
+  // ─── Webhook endpoints (use instance token) ───
+  updateWebhook: (instanceId, type, url, instanceToken) => {
     const endpoints = {
       connected: "update-webhook-connected",
       disconnected: "update-webhook-disconnected",
@@ -96,9 +96,9 @@ export const wapi = {
     return wapiRequest(`/webhook/${endpoints[type]}?instanceId=${instanceId}`, {
       method: "PUT",
       body: JSON.stringify({ value: url }),
-    });
+    }, instanceToken);
   },
 
-  fetchWebhookLogs: (instanceId, page = 1, perPage = 10) =>
-    wapiRequest(`/webhook/fetch-webhook-logs?instanceId=${instanceId}&perPage=${perPage}&page=${page}`),
+  fetchWebhookLogs: (instanceId, instanceToken, page = 1, perPage = 10) =>
+    wapiRequest(`/webhook/fetch-webhook-logs?instanceId=${instanceId}&perPage=${perPage}&page=${page}`, {}, instanceToken),
 };
