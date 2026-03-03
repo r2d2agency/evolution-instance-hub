@@ -11,9 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useInstances, useCreateInstance, useDeleteInstance, useDisconnectInstance, useRestartInstance } from "@/hooks/useInstances";
+import { useInstances, useCreateInstance, useDeleteInstance, useDisconnectInstance, useRestartInstance, useSyncInstances } from "@/hooks/useInstances";
 
 export default function Instances() {
   const { toast } = useToast();
@@ -25,6 +25,7 @@ export default function Instances() {
   const deleteMutation = useDeleteInstance();
   const disconnectMutation = useDisconnectInstance();
   const restartMutation = useRestartInstance();
+  const syncMutation = useSyncInstances();
 
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -126,9 +127,25 @@ export default function Instances() {
           <h1 className="text-2xl font-bold tracking-tight">Instâncias</h1>
           <p className="text-sm text-muted-foreground mt-1">Gerencie suas instâncias W-API</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" /> Nova Instância
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              syncMutation.mutate(undefined, {
+                onSuccess: (data) => toast({ title: "Sincronização concluída", description: (data as any).message }),
+                onError: (err) => toast({ title: "Erro ao sincronizar", description: err.message, variant: "destructive" }),
+              });
+            }}
+            disabled={syncMutation.isPending}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? "animate-spin" : ""}`} />
+            {syncMutation.isPending ? "Sincronizando..." : "Sincronizar"}
+          </Button>
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" /> Nova Instância
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">

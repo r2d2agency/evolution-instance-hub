@@ -16,6 +16,14 @@ export function useCreateInstance() {
   });
 }
 
+export function useSyncInstances() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => instancesService.sync(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
+  });
+}
+
 export function useDeleteInstance() {
   const qc = useQueryClient();
   return useMutation({
