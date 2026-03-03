@@ -80,7 +80,7 @@ export const wapi = {
   autoRead: (instanceId, value, instanceToken) =>
     wapiRequest(`/instance/update-auto-read-message?instanceId=${instanceId}`, {
       method: "PUT",
-      body: JSON.stringify({ value: String(value) }),
+      body: JSON.stringify({ value: Boolean(value) }),
     }, instanceToken),
 
   // ─── Webhook endpoints (use instance token) ───
