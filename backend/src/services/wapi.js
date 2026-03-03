@@ -3,6 +3,10 @@ const WAPI_TOKEN = process.env.WAPI_TOKEN || "";
 
 async function wapiRequest(path, options = {}) {
   const url = `${WAPI_BASE}${path}`;
+
+  console.log(`[W-API] ${options.method || "GET"} ${url}`);
+  if (options.body) console.log(`[W-API] Body: ${options.body}`);
+
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -12,7 +16,15 @@ async function wapiRequest(path, options = {}) {
     },
   });
 
-  const data = await res.json().catch(() => ({}));
+  const text = await res.text();
+  let data = {};
+  try {
+    data = JSON.parse(text);
+  } catch {
+    console.error(`[W-API] Non-JSON response: ${text.substring(0, 500)}`);
+  }
+
+  console.log(`[W-API] Response ${res.status}:`, JSON.stringify(data).substring(0, 300));
 
   if (!res.ok) {
     throw new Error(data.message || `W-API error: ${res.status}`);
@@ -24,13 +36,13 @@ async function wapiRequest(path, options = {}) {
 export const wapi = {
   // Integration endpoints
   createInstance: (instanceName, rejectCalls = false, callMessage = "") => {
-    const params = new URLSearchParams({
-      instanceName,
-      rejectCalls: String(rejectCalls ?? false),
-      callMessage: callMessage || "",
-    });
-    return wapiRequest(`/integrator/create-instance?${params.toString()}`, {
+    return wapiRequest("/integrator/create-instance", {
       method: "POST",
+      body: JSON.stringify({
+        instanceName,
+        rejectCalls: rejectCalls ?? false,
+        callMessage: callMessage || "",
+      }),
     });
   },
 

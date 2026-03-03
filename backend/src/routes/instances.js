@@ -84,6 +84,65 @@ router.post("/", async (req, res) => {
   }
 });
 
+// ─── SYNC FROM W-API ─────────────────────────────────────────
+// POST /api/instances/sync
+router.post("/sync", async (req, res) => {
+  try {
+    let page = 1;
+    let allInstances = [];
+    let hasMore = true;
+
+    while (hasMore) {
+      const data = await wapi.listInstances(page, 100);
+      const instances = data.instances || data.data || [];
+      allInstances = allInstances.concat(instances);
+      hasMore = instances.length === 100;
+      page++;
+    }
+
+    let imported = 0;
+    let skipped = 0;
+
+    for (const inst of allInstances) {
+      const instanceId = inst.instanceId || inst.id;
+      if (!instanceId) continue;
+
+      const existing = await instancesRepo.findByInstanceId(instanceId);
+      if (existing) {
+        skipped++;
+        continue;
+      }
+
+      await instancesRepo.create({
+        instance_id: instanceId,
+        instance_name: inst.instanceName || instanceId,
+        token: inst.token || "",
+        webhook_connected: inst.webhookConnectedUrl || null,
+        webhook_disconnected: inst.webhookDisconnectedUrl || null,
+        webhook_delivery: inst.webhookDeliveryUrl || null,
+        webhook_received: inst.webhookReceivedUrl || null,
+        webhook_message_status: inst.webhookStatusUrl || null,
+        webhook_chat_presence: inst.webhookPresenceUrl || null,
+        reject_calls: inst.rejectCalls || false,
+        call_message: inst.callMessage || null,
+        metadata: {},
+      });
+      imported++;
+    }
+
+    res.json({
+      error: false,
+      message: `Sincronização concluída: ${imported} importadas, ${skipped} já existentes`,
+      total: allInstances.length,
+      imported,
+      skipped,
+    });
+  } catch (err) {
+    console.error("POST /sync error:", err.message);
+    res.status(500).json({ error: true, message: err.message });
+  }
+});
+
 // ─── LIST INSTANCES ──────────────────────────────────────────
 // GET /api/instances
 router.get("/", async (req, res) => {

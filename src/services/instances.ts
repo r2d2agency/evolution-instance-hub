@@ -126,4 +126,7 @@ export const instancesService = {
 
   webhookLogs: (id: string, page = 1, perPage = 10) =>
     api.get<unknown>(`/api/instances/${id}/webhook-logs?page=${page}&perPage=${perPage}`),
+
+  sync: () =>
+    api.post<{ error: boolean; message: string; total: number; imported: number; skipped: number }>("/api/instances/sync"),
 };
