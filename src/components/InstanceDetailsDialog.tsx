@@ -32,6 +32,7 @@ export function InstanceDetailsDialog({ instance, open, onOpenChange, onDisconne
   const { data: device } = useDeviceInfo(open && instance?.connected ? instance.id : "");
   const renameMutation = useRenameInstance();
   const autoReadMutation = useAutoRead();
+  const rejectCallsMutation = useRejectCalls();
 
   const [showToken, setShowToken] = useState(false);
   const [copied, setCopied] = useState(false);
