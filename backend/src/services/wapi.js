@@ -83,11 +83,27 @@ export const wapi = {
       body: JSON.stringify({ value: Boolean(value) }),
     }, instanceToken),
 
-  rejectCalls: (instanceId, value, callMessage, instanceToken) =>
-    wapiRequest(`/instance/update-reject-call?instanceId=${instanceId}`, {
-      method: "PUT",
-      body: JSON.stringify({ value: Boolean(value), callMessage: callMessage || "" }),
-    }, instanceToken),
+  rejectCalls: async (instanceId, value, instanceToken) => {
+    const body = JSON.stringify({ value: Boolean(value) });
+    const candidatePaths = [
+      `/instance/update-reject-call?instanceId=${instanceId}`,
+      `/instance/update-call-reject-auto?instanceId=${instanceId}`,
+    ];
+
+    let lastError;
+    for (const path of candidatePaths) {
+      try {
+        return await wapiRequest(path, {
+          method: "PUT",
+          body,
+        }, instanceToken);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError;
+  },
 
   // ─── Webhook endpoints (use instance token) ───
   updateWebhook: (instanceId, type, url, instanceToken) => {

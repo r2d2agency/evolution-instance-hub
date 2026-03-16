@@ -324,8 +324,14 @@ router.put("/:id/reject-calls", async (req, res) => {
     const inst = await instancesRepo.findById(req.params.id);
     if (!inst) return res.status(404).json({ error: true, message: "Instância não encontrada" });
 
-    await wapi.rejectCalls(inst.instance_id, parsed.value, parsed.callMessage, inst.token);
-    await instancesRepo.update(req.params.id, { reject_calls: parsed.value, call_message: parsed.callMessage });
+    await wapi.rejectCalls(inst.instance_id, parsed.value, inst.token);
+
+    const updatePayload = { reject_calls: parsed.value };
+    if (parsed.callMessage) {
+      updatePayload.call_message = parsed.callMessage;
+    }
+
+    await instancesRepo.update(req.params.id, updatePayload);
 
     res.json({ error: false, message: parsed.value ? "Rejeição de chamadas ativada" : "Rejeição de chamadas desativada" });
   } catch (err) {

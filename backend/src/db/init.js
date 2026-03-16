@@ -23,6 +23,9 @@ CREATE TABLE IF NOT EXISTS instances (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE instances ADD COLUMN IF NOT EXISTS reject_calls BOOLEAN DEFAULT false;
+ALTER TABLE instances ADD COLUMN IF NOT EXISTS call_message TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_instances_instance_id ON instances(instance_id);
 CREATE INDEX IF NOT EXISTS idx_instances_instance_name ON instances(instance_name);
 `;

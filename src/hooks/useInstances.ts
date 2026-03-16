@@ -75,7 +75,12 @@ export function useRejectCalls() {
   return useMutation({
     mutationFn: ({ id, value, callMessage }: { id: string; value: boolean; callMessage?: string }) =>
       instancesService.rejectCalls(id, value, callMessage),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
+    onSuccess: async (_, variables) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["instances"] }),
+        qc.invalidateQueries({ queryKey: ["instance-details", variables.id] }),
+      ]);
+    },
   });
 }
 
