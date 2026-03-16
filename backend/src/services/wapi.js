@@ -83,6 +83,12 @@ export const wapi = {
       body: JSON.stringify({ value: Boolean(value) }),
     }, instanceToken),
 
+  rejectCalls: (instanceId, value, callMessage, instanceToken) =>
+    wapiRequest(`/instance/update-reject-call?instanceId=${instanceId}`, {
+      method: "PUT",
+      body: JSON.stringify({ value: Boolean(value), callMessage: callMessage || "" }),
+    }, instanceToken),
+
   // ─── Webhook endpoints (use instance token) ───
   updateWebhook: (instanceId, type, url, instanceToken) => {
     const endpoints = {

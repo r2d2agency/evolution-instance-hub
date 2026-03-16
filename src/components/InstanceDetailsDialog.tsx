@@ -252,7 +252,17 @@ export function InstanceDetailsDialog({ instance, open, onOpenChange, onDisconne
                     </div>
                     <Switch
                       checked={inst.rejectCalls ?? false}
-                      disabled
+                      onCheckedChange={(value) => {
+                        if (!instance) return;
+                        rejectCallsMutation.mutate(
+                          { id: instance.id, value, callMessage: inst.callMessage || "" },
+                          {
+                            onSuccess: () => toast({ title: value ? "Rejeição de chamadas ativada" : "Rejeição de chamadas desativada" }),
+                            onError: (err) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+                          }
+                        );
+                      }}
+                      disabled={rejectCallsMutation.isPending}
                     />
                   </div>
 

@@ -317,6 +317,26 @@ router.put("/:id/auto-read", async (req, res) => {
   }
 });
 
+// ─── REJECT CALLS ────────────────────────────────────────────
+router.put("/:id/reject-calls", async (req, res) => {
+  try {
+    const parsed = rejectCallsSchema.parse(req.body);
+    const inst = await instancesRepo.findById(req.params.id);
+    if (!inst) return res.status(404).json({ error: true, message: "Instância não encontrada" });
+
+    await wapi.rejectCalls(inst.instance_id, parsed.value, parsed.callMessage, inst.token);
+    await instancesRepo.update(req.params.id, { reject_calls: parsed.value, call_message: parsed.callMessage });
+
+    res.json({ error: false, message: parsed.value ? "Rejeição de chamadas ativada" : "Rejeição de chamadas desativada" });
+  } catch (err) {
+    if (err.name === "ZodError") {
+      return res.status(422).json({ error: true, message: "Dados inválidos", details: err.errors });
+    }
+    console.error("PUT /reject-calls error:", err.message);
+    res.status(500).json({ error: true, message: err.message });
+  }
+});
+
 // ─── RENAME ──────────────────────────────────────────────────
 router.put("/:id/rename", async (req, res) => {
   try {
