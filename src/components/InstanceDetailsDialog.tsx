@@ -119,7 +119,10 @@ export function InstanceDetailsDialog({ instance, open, onOpenChange, onDisconne
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); setShowToken(false); }}>
-      <DialogContent className="bg-card border-border/50 max-w-lg max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="bg-card border-border/50 max-w-lg max-h-[90vh] overflow-y-auto p-0" aria-describedby={undefined}>
+        <VisuallyHidden>
+          <DialogTitle>Detalhes da instância</DialogTitle>
+        </VisuallyHidden>
         {detailsLoading ? (
           <div className="flex justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
