@@ -6,6 +6,7 @@ import {
   updateWebhooksSchema,
   renameSchema,
   autoReadSchema,
+  rejectCallsSchema,
 } from "../validators/instances.js";
 
 const router = Router();
