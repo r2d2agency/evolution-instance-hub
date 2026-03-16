@@ -121,6 +121,9 @@ export const instancesService = {
   autoRead: (id: string, value: boolean) =>
     api.put<{ error: boolean; message: string }>(`/api/instances/${id}/auto-read`, { value }),
 
+  rejectCalls: (id: string, value: boolean, callMessage?: string) =>
+    api.put<{ error: boolean; message: string }>(`/api/instances/${id}/reject-calls`, { value, callMessage: callMessage || "" }),
+
   updateWebhooks: (id: string, webhooks: Record<string, string>) =>
     api.put<{ error: boolean; message: string; results: Record<string, string> }>(`/api/instances/${id}/webhooks`, webhooks),
 

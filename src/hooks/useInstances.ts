@@ -70,6 +70,15 @@ export function useAutoRead() {
   });
 }
 
+export function useRejectCalls() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, value, callMessage }: { id: string; value: boolean; callMessage?: string }) =>
+      instancesService.rejectCalls(id, value, callMessage),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
+  });
+}
+
 export function useInstanceDetails(id: string) {
   return useQuery({
     queryKey: ["instance-details", id],

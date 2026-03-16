@@ -12,7 +12,7 @@ import {
   MessageSquare, PhoneOff, Bell, BellOff, Activity
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useInstanceDetails, useDeviceInfo, useRenameInstance, useAutoRead } from "@/hooks/useInstances";
+import { useInstanceDetails, useDeviceInfo, useRenameInstance, useAutoRead, useRejectCalls } from "@/hooks/useInstances";
 import { instancesService } from "@/services/instances";
 import { EvolutionInstance } from "@/types/evolution";
 import { useQueryClient } from "@tanstack/react-query";
@@ -32,6 +32,7 @@ export function InstanceDetailsDialog({ instance, open, onOpenChange, onDisconne
   const { data: device } = useDeviceInfo(open && instance?.connected ? instance.id : "");
   const renameMutation = useRenameInstance();
   const autoReadMutation = useAutoRead();
+  const rejectCallsMutation = useRejectCalls();
 
   const [showToken, setShowToken] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -251,7 +252,17 @@ export function InstanceDetailsDialog({ instance, open, onOpenChange, onDisconne
                     </div>
                     <Switch
                       checked={inst.rejectCalls ?? false}
-                      disabled
+                      onCheckedChange={(value) => {
+                        if (!instance) return;
+                        rejectCallsMutation.mutate(
+                          { id: instance.id, value, callMessage: inst.callMessage || "" },
+                          {
+                            onSuccess: () => toast({ title: value ? "Rejeição de chamadas ativada" : "Rejeição de chamadas desativada" }),
+                            onError: (err) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
+                          }
+                        );
+                      }}
+                      disabled={rejectCallsMutation.isPending}
                     />
                   </div>
 

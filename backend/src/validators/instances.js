@@ -33,3 +33,8 @@ export const renameSchema = z.object({
 export const autoReadSchema = z.object({
   value: z.boolean(),
 });
+
+export const rejectCallsSchema = z.object({
+  value: z.boolean(),
+  callMessage: z.string().max(500).optional().default(""),
+});
