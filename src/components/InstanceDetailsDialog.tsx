@@ -12,7 +12,7 @@ import {
   MessageSquare, PhoneOff, Bell, BellOff, Activity
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useInstanceDetails, useDeviceInfo, useRenameInstance, useAutoRead } from "@/hooks/useInstances";
+import { useInstanceDetails, useDeviceInfo, useRenameInstance, useAutoRead, useRejectCalls } from "@/hooks/useInstances";
 import { instancesService } from "@/services/instances";
 import { EvolutionInstance } from "@/types/evolution";
 import { useQueryClient } from "@tanstack/react-query";
