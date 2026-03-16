@@ -159,8 +159,9 @@ export function InstanceDetailsDialog({ instance, open, onOpenChange, onDisconne
                   <div className="flex items-center gap-2 mt-1">
                     <Input
                       readOnly
-                      type={showToken ? "text" : "password"}
-                      value={inst.token || ""}
+                      type="text"
+                      value={showToken ? inst.token || "" : inst.token ? "••••••••••••••••" : ""}
+                      aria-label="Token da instância"
                       className="font-mono text-xs bg-background border-border/50 flex-1"
                     />
                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setShowToken(!showToken)}>

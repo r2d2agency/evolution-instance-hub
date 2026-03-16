@@ -64,6 +64,9 @@ async function initDB() {
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
+
+      ALTER TABLE instances ADD COLUMN IF NOT EXISTS reject_calls BOOLEAN DEFAULT false;
+      ALTER TABLE instances ADD COLUMN IF NOT EXISTS call_message TEXT;
     `);
     console.log("✅ Database tables ready");
   } catch (err) {
