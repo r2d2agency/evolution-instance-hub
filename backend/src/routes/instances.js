@@ -149,9 +149,10 @@ router.get("/", async (req, res) => {
     const enriched = await Promise.all(
       instances.map(async (inst) => {
         try {
-          const status = await wapi.status(inst.instance_id, inst.token);
+          const status = await wapi.status(inst.instance_id, inst.token, 4000);
           return { ...inst, connected: status.connected };
-        } catch {
+        } catch (err) {
+          console.warn(`[list] status falhou ${inst.instance_id}: ${err.message}`);
           return inst;
         }
       })
