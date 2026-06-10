@@ -1,20 +1,33 @@
 const WAPI_BASE = process.env.WAPI_BASE_URL || "https://api.w-api.app/v1";
 const WAPI_TOKEN = process.env.WAPI_TOKEN || "";
 
-async function wapiRequest(path, options = {}, token = WAPI_TOKEN) {
+async function wapiRequest(path, options = {}, token = WAPI_TOKEN, timeoutMs = 15000) {
   const url = `${WAPI_BASE}${path}`;
 
   console.log(`[W-API] ${options.method || "GET"} ${url}`);
   if (options.body) console.log(`[W-API] Body: ${options.body}`);
 
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...options.headers,
-    },
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let res;
+  try {
+    res = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...options.headers,
+      },
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === "AbortError") {
+      throw new Error(`W-API timeout após ${timeoutMs}ms: ${path}`);
+    }
+    throw err;
+  }
+  clearTimeout(timer);
 
   const text = await res.text();
   let data = {};
@@ -62,8 +75,8 @@ export const wapi = {
   disconnect: (instanceId, instanceToken) =>
     wapiRequest(`/instance/disconnect?instanceId=${instanceId}`, {}, instanceToken),
 
-  status: (instanceId, instanceToken) =>
-    wapiRequest(`/instance/status-instance?instanceId=${instanceId}`, {}, instanceToken),
+  status: (instanceId, instanceToken, timeoutMs) =>
+    wapiRequest(`/instance/status-instance?instanceId=${instanceId}`, {}, instanceToken, timeoutMs),
 
   device: (instanceId, instanceToken) =>
     wapiRequest(`/instance/device?instanceId=${instanceId}`, {}, instanceToken),
